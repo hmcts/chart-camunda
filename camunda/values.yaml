@@ -1,0 +1,15 @@
+java:
+  applicationPort: 8080
+  environment:
+    DB_DRIVER: org.postgresql.Driver
+    DB_URL: jdbc:postgresql://camunda-db-sandbox.postgres.database.azure.com:5432/camunda?sslmode=require
+    DB_USERNAME: camunda@camunda-db-sandbox
+  image: 'camunda/camunda-bpm-platform:latest'
+  ingressHost: 'camunda.service.core-compute-sandbox.internal'
+  livenessPath: /engine-rest/version
+  readinessPath: /engine-rest/version
+  secrets: 
+    DB_PASSWORD:
+      secretRef: db-password
+      key: password
+

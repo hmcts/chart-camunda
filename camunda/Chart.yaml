@@ -1,0 +1,6 @@
+name: camunda
+home: https://github.com/hmcts/chart-camunda
+version: 1.0.0
+description: Camunda BPM Platform
+maintainers:
+  - name: HMCTS Platform engineering team
