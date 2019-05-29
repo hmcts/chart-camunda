@@ -4,7 +4,7 @@ java:
     DB_DRIVER: org.postgresql.Driver
     DB_URL: jdbc:postgresql://camunda-db-sandbox.postgres.database.azure.com:5432/camunda?sslmode=require
     DB_USERNAME: camunda@camunda-db-sandbox
-  image: 'camunda/camunda-bpm-platform:latest'
+  image: 'camunda/camunda-bpm-platform:7.10.0'
   ingressHost: 'camunda.service.core-compute-sandbox.internal'
   livenessPath: /engine-rest/version
   readinessPath: /engine-rest/version
