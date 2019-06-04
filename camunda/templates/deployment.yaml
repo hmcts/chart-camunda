@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    {{- ( include "labels" . ) | indent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- ( include "labels" . ) | indent 8 }}
+    spec:
+      {{- if eq .Values.databaseType "external" }}
+      volumes:
+        - name: kvcreds
+          flexVolume:
+            driver: "azure/kv"
+            secretRef:
+              name: kvcreds 
+            options:
+              usepodidentity: "false"
+              subscriptionid: {{ .Values.global.subscriptionId }}
+              tenantid: {{ .Values.global.tenantId }}
+              keyvaultname: camunda-{{ .Values.global.environment }}
+              resourcegroup: camunda-{{ .Values.global.environment }}
+              keyvaultobjectnames: "camunda-postgres-database;camunda-postgres-host;camunda-postgres-password;camunda-postgres-port;camunda-postgres-user"
+              keyvaultobjecttypes: "secret;secret;secret;secret;secret" # OPTIONS: secret, key, cert
+      {{- end }}
+      containers:
+      - image: "camunda/camunda-bpm-platform:7.10.0"
+        name: {{ .Release.Name }}
+        {{- if eq .Values.databaseType "external" }}
+        command: 
+          - "/bin/sh"
+          - "-c" 
+          - "export DB_URL=export DB_URL=jdbc:postgresql://$(cat /kvmnt/camunda-postgres-host):$(cat /kvmnt/camunda-postgres-port)/$(cat /kvmnt/camunda-postgres-database)?sslmode=require;export DB_PASSWORD=$(cat /kvmnt/camunda-postgres-password);export DB_USERNAME=$(cat /kvmnt/camunda-postgres-user);./camunda.sh"
+        volumeMounts:
+        - name: kvcreds
+          mountPath: /kvmnt
+          readOnly: true
+        {{- end }}
+        env:
+          {{- if eq .Values.databaseType "pod" }}
+          - name: DB_URL
+            value: jdbc:postgresql://{{ .Release.Name }}-postgresql:5432/{{ required "postgresql.postgresqlDatabase " .Values.postgresql.postgresqlDatabase  }}
+          - name: DB_USERNAME
+            value: {{ required "postgresql.postgresqlUsername " .Values.postgresql.postgresqlUsername  }}
+          - name: DB_PASSWORD
+            value: {{ required "postgresql.postgresqlPassword " .Values.postgresql.postgresqlPassword  }}
+          {{- else if eq .Values.databaseType "external" }}
+          - name: DB_URL
+            value: jdbc:postgresql://{{ required "postgresqlHost " .Values.postgresqlHost }}:{{ .Values.postgresqlPort | default "5432" }}/{{ required "postgresqlDatabase " .Values.postgresqlDatabase }}?sslmode=require
+          {{- end }}
+          - name: DB_DRIVER
+            value: org.postgresql.Driver
+        resources:
+          requests:
+            memory: {{ required "memoryRequests " .Values.memoryRequests  }}
+            cpu: {{ required "cpuRequests " .Values.cpuRequests  }}
+          limits:
+            memory: {{  required "memoryLimits  " .Values.memoryLimits   }}
+            cpu: {{  required "cpuLimits  " .Values.cpuLimits   }}
+        ports:
+        - containerPort: {{ required "applicationPort " .Values.applicationPort  }}
+          name: http
+        livenessProbe:
+          httpGet:
+            path: {{ required "livenessPath" .Values.livenessPath  }}
+            port: {{  required "applicationPort " .Values.applicationPort  }}
+          initialDelaySeconds: {{  required "livenessDelay " .Values.livenessDelay  }}
+          timeoutSeconds: {{  required "livenessTimeout " .Values.livenessTimeout  }}
+          periodSeconds: {{  required "livenessPeriod " .Values.livenessPeriod  }}
+          failureThreshold: {{  required "livenessFailureThreshold  " .Values.livenessFailureThreshold   }}
+        readinessProbe:
+          httpGet:
+            path: {{ required "readinessPath" .Values.readinessPath   }}
+            port: {{  required "applicationPort" .Values.applicationPort  }}
+          initialDelaySeconds: {{  required "readinessDelay " .Values.readinessDelay  }}
+          timeoutSeconds: {{  required "readinessTimeout " .Values.readinessTimeout  }}
+          periodSeconds: {{  required "readinessPeriod " .Values.readinessPeriod  }}
+        imagePullPolicy: IfNotPresent
