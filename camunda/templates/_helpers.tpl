@@ -1,6 +1,6 @@
 ---
 {{/*
-All the common lables needed for the lables sections of the definitions.
+All the common labels needed for the labels sections of the definitions.
 */}}
 {{- define "labels" }}
 app.kubernetes.io/name: {{ .Release.Name }}
