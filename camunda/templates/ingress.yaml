@@ -15,4 +15,4 @@ spec:
       - path: /
         backend:
           serviceName: {{ .Release.Name }}
-          servicePort: 8080
+          servicePort: 80
