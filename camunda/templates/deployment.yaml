@@ -5,6 +5,9 @@ metadata:
   name: {{ .Release.Name }}
   labels:
     {{- ( include "labels" . ) | indent 4 }}
+    {{- if .Values.aadIdentityName }}
+    aadpodidbinding: {{ .Values.aadIdentityName }}
+    {{- end }}
 spec:
   replicas: {{ .Values.replicas }}
   selector:
@@ -14,16 +17,21 @@ spec:
     metadata:
       labels:
         {{- ( include "labels" . ) | indent 8 }}
+        {{- if .Values.aadIdentityName }}
+        aadpodidbinding: {{ .Values.aadIdentityName }}
+        {{- end }}        
     spec:
       {{- if eq .Values.databaseType "external" }}
       volumes:
         - name: kvcreds
           flexVolume:
             driver: "azure/kv"
+            {{- if not .Values.aadIdentityName }}
             secretRef:
               name: kvcreds 
+            {{- end }}
             options:
-              usepodidentity: "false"
+              usepodidentity: "{{ if .Values.aadIdentityName }}true{{ else }}false{{ end }}"
               subscriptionid: {{ .Values.global.subscriptionId }}
               tenantid: {{ .Values.global.tenantId }}
               keyvaultname: camunda-{{ .Values.global.environment }}
