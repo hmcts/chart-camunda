@@ -40,7 +40,7 @@ spec:
               keyvaultobjecttypes: "secret;secret;secret;secret;secret" # OPTIONS: secret, key, cert
       {{- end }}
       containers:
-      - image: "camunda/camunda-bpm-platform:7.10.0"
+      - image: "hmcts.azurecr.io/camunda/camunda-bpm-platform-ee:7.11.0"
         name: {{ .Release.Name }}
         {{- if eq .Values.databaseType "external" }}
         command: 
